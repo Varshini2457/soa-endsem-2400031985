@@ -1,0 +1,38 @@
+
+services:
+  postgresdb:
+    image: postgres:16
+    container_name: postgresdb
+    environment:
+      POSTGRES_DB: endsemdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: docker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d endsemdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./CrudServiceProject
+      dockerfile: Dockerfile
+    container_name: bike-rental-backend
+    ports:
+      - "9001:8083"
+    environment:
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresdb:5432/endsemdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: docker
+      EUREKA_CLIENT_ENABLED: "false"
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
